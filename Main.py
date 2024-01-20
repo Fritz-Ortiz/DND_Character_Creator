@@ -7,24 +7,29 @@ headers = {'Accept': 'application/json'}
 Character = {
     "name": "",
     "race": {},
-    "subrace": {},
-    "gender": "",
     "class": {},
-    "subclass": {},
     "equipment": {},
-    "background": {},
     }
 def Player():
-    print(Character)
+    print("\n\n")
+    for detail in Character:
+        print(detail)
+        print(Character[detail])
+        print("\n\n\n")
 
-def addInfo(index, data, forOutput):
+
+def addInfo(index, data, forOutput=''):
+    print("started adding . . .")
     i = index
     info = data
+    
     if type(Character[i]) == dict:
         Character[i] = {forOutput: info}
+        print("Character " + i + " set to " + forOutput)
     else:
         Character[i] = info
-    print("Character " + i + " set to " + forOutput)
+        print("Character " + i + " set to " + data)
+    
 
 def Name():
     name = input("What would you like your name to be? Name: ")
@@ -58,7 +63,7 @@ def Race():
 
 def Class():
     option = 1
-    classes = {1: "dragonborn",2: "dwarf",3: "elf",4: "gnome",5: "half-elf",6: "half-orc",6: "halfling",7: "human",8: "tiefling"}
+    classes = {1: "barbarian", 2: "bard", 3: "cleric", 4: "druid", 5: "fighter", 6: "monk", 7: "paladin", 8: "ranger", 9: "rogue", 10: "sorcerer", 11: "warlock", 12: "wizard"}
 
     print("Choose your class:")
     for i in classes:
@@ -74,7 +79,8 @@ def Class():
 
         if response.status_code == 200:
             data = response.json()
-            addInfo("class", data, data['index'])
+            toAdd={"hit die" : data['hit_die']}
+            addInfo("class", toAdd, data['name'])
             print("class is " + str(classes[int(pick)]))
         else:
             print("Something went wrong")
@@ -114,6 +120,39 @@ def Weapons():
     else:
          print("Something went wrong")
 
+def Armor():
+    armor = []
+    option = 0
+    
+    response = requests.get(url + "/api/equipment-categories/armor", headers=headers)
+    if response.status_code == 200:
+        try:
+            data = response.json()
+            equipment = data['equipment']
+            for i in equipment[:-4]:
+                armor.append(i['index'])
+
+            print("Choose a piece of armor:")
+            
+            for i in armor:
+                print(str(option + 1) + ". " + armor[option])
+                option += 1
+            pick = int(input("Enter your Choice: ")  )
+            print(f"You have chosen {armor[pick -1]}")
+            getinfo = input("Would you like to know more about this weapon? (Y/N)")  
+            if getinfo.lower().strip() == "y":
+                itemInfo(armor[pick -1])
+            else:
+                print("Returning to main menu...")
+                pass
+            
+        except:
+            print("failure while picking armor, please try again.")
+    
+    else:
+         print("Something went wrong")
+
+
 def itemInfo(itemName):
     #index = characterIndex  characterIndex
     item = itemName
@@ -128,52 +167,71 @@ def itemInfo(itemName):
             print("Could not find item, please try again.")
             return 'error: item not found'
 
-    information = print(data)
+    
     print(f"\nName: {data['name']}")
     #Check what attributes there are and print them
-    if 'desc' in data and data['desc'] and len(data['desc']) > 1:
-        print(f"\nDescription: {data['desc'][1:]}\n")
 
-    if 'equipment_category' in data and 'name' in data['equipment_category']:
+    if 'equipment_category' in data and 'name' in data['equipment_category'] and data['equipment_category']['name'] == 'Weapon':
         print(f"\nEquipment Category: {data['equipment_category']['name']}")
+        if 'desc' in data and data['desc'] and len(data['desc']) > 1:
+            print(f"\nDescription: {data['desc'][1:]}\n")
 
-    if 'weapon_category' in data:
-        print(f"\nWeapon Category: {data['weapon_category']}")
+        
 
-    if 'weapon_range' in data:
-        print(f"\nWeapon Range: {data['weapon_range']}")
+        if 'weapon_category' in data:
+            print(f"\nWeapon Category: {data['weapon_category']}")
 
-    if 'category_range' in data:
-        print(f"\nCategory Range: {data['category_range']}")
+        if 'weapon_range' in data:
+            print(f"\nWeapon Range: {data['weapon_range']}")
 
-    if 'cost' in data and 'quantity' in data['cost']:
-        if 'unit' in data['cost']:
-            print(f"\nCost: {data['cost']['quantity']} {data['cost']['unit']}")
+        if 'category_range' in data:
+            print(f"\nCategory Range: {data['category_range']}")
+
+        if 'cost' in data and 'quantity' in data['cost']:
+            if 'unit' in data['cost']:
+                print(f"\nCost: {data['cost']['quantity']} {data['cost']['unit']}")
+            else:
+                print(f"\nCost: {data['cost']['quantity']}")
+
+        if 'throw_range' in data:
+            if 'normal' in data['throw_range'] and 'long' in data['throw_range']:
+                print(f"\nRange: Normal: {data['throw_range']['normal']} ft, Long: {data['throw_range']['long']} ft")
+
+        if 'weight' in data:
+            print(f"\nWeight: {data['weight']} lbs")
+            print("\nProperties:")
+        if 'properties' in data:
+            for prop in data['properties']:
+                print(f"- {prop['name']}")
+        if 'special' in data:
+            print("\nSpecial:")
+            for line in data['special']:
+                print(line)
+        print()        
+        toChar = input("Would you like to add this to your character? (Y/N)")
+        if toChar.lower().strip() == "y":
+                    addInfo("equipment", data, data['name'])
+                    print()
         else:
-            print(f"\nCost: {data['cost']['quantity']}")
-
-    if 'throw_range' in data:
-        if 'normal' in data['throw_range'] and 'long' in data['throw_range']:
-            print(f"\nRange: Normal: {data['throw_range']['normal']} ft, Long: {data['throw_range']['long']} ft")
-
-    if 'weight' in data:
-        print(f"\nWeight: {data['weight']} lbs")
-        print("\nProperties:")
-    if 'properties' in data:
-        for prop in data['properties']:
-            print(f"- {prop['name']}")
-    if 'special' in data:
-        print("\nSpecial:")
-        for line in data['special']:
-            print(line)
-    print()        
-    toChar = input("Would you like to add this weapon to your character? (Y/N)")
-    if toChar.lower().strip() == "y":
-                addInfo("equipment", data, data['name'])
-                print()
+            print("Returning to main menu... \n\n")
+            pass
     else:
-        print("Returning to main menu... \n\n")
-        pass
+        for i in data:
+            if type(data[i]) == dict:
+                for detail in data[i]:
+                    if detail != 'url'  and detail != 'index' :
+                        print(str(detail) +": " + str(data[i][detail]))
+            else:
+                if i != 'url'  and i != 'index' :
+                    print(str(i) +": " + str(data[i]))
+        print()        
+        toChar = input("Would you like to add this to your character? (Y/N)")
+        if toChar.lower().strip() == "y":
+                    addInfo("equipment", data, data['name'])
+                    print()
+        else:
+            print("Returning to main menu... \n\n")
+            pass
 
 
 
@@ -182,10 +240,10 @@ option = {
             "1" : "Name",
             "2" : "Race",
             "3" : "Class",
-            "4" : "Equipment",
+            "4" : "Armor",
             "5" : "Weapons",
-            #"6" : Background(),
-            "7": "Player"
+            "6": "Player"
+            
         } 
 #Runs the chosen function
 def Run(id):
@@ -208,18 +266,17 @@ def main():
         print("1 - Character Name")
         print("2 - Race")
         print("3 - Class")
-        print("4 - Equipment")
+        print("4 - Armor")
         print("5 - Weapons")
-        print("6 - Background")
-        print("7 - Show Palyer Info")
-        print("8 - I'm Finished")
+        print("6 - Show Palyer Info")
+        print("7 - I'm Finished")
 
         choice = input("Enter your choice: ")
 
-        if 1 <= int(choice) <= 7:
+        if 1 <= int(choice) <= 6:
             print(choice)
             Run(choice)
-        elif choice == '8':
+        elif choice == '7':
             print("Goodbye!")
             break
         else:
